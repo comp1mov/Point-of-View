@@ -38,6 +38,48 @@
         }
 
 
+
+
+        /* Custom cursor that can fade (native cursor can't animate) */
+        #canvas-container,
+        #canvas-container canvas {
+            cursor: none; /* hide system cursor so our cursor is the only one */
+        }
+
+        #soft-cursor {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 14px;
+            height: 14px;
+            margin-left: -9px; /* center on pointer */
+            margin-top: -9px;
+            pointer-events: none;
+            z-index: 99999;
+
+            opacity: 0;
+            transition: opacity 420ms ease;
+            will-change: transform, opacity;
+        }
+
+        /* crosshair look */
+        #soft-cursor::before,
+        #soft-cursor::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            background: rgba(255,255,255,0.75);
+            transform: translate(-50%, -50%);
+        }
+
+        #soft-cursor::before { width: 18px; height: 1px; }
+        #soft-cursor::after  { width: 1px;  height: 18px; }
+
+        #soft-cursor.visible {
+            opacity: 1;
+        }
+
 @supports (padding: env(safe-area-inset-top)) {
             body {
                 padding: 0 !important;
@@ -559,7 +601,9 @@
 <body>
     <div id="canvas-container"></div>
 
-    <div id="corner-ui">
+    
+    <div id="soft-cursor" aria-hidden="true"></div>
+<div id="corner-ui">
         <div id="corner-heart"></div>
         <button id="corner-help" type="button" aria-label="Help">?</button>
     </div>
@@ -857,9 +901,9 @@
 
             // 3D Grid Volume (Lattice)
             showGrid3D: true,
-            grid3DSizeX: 20.0,
+            grid3DSizeX: 22.0,
             grid3DSizeY: 10.0,
-            grid3DSizeZ: 20.0,
+            grid3DSizeZ: 22.0,
             grid3DDivX: 5,
             grid3DDivY: 3,
             grid3DDivZ: 5,
@@ -870,7 +914,7 @@
             grid3DOffsetZ: 0,
             grid3DFadeStart: 0.00,
             grid3DFadeEnd: 0.8,
-            grid3DFadePower: 4.5,
+            grid3DFadePower: 3.5,
             grid3DFadeRadiusMultX: 1.0,
             grid3DFadeRadiusMultY: 2.0,
             grid3DFadeRadiusMultZ: 1.0,
@@ -884,7 +928,64 @@
         // ============================================
         const canvasContainerEl = document.getElementById('canvas-container');
 
-        function setCanvasVisible(visible, durationMs = 450) {
+        
+
+        // ============================================
+        // CURSOR FADE OUT AFTER INACTIVITY
+        // ============================================
+        const softCursorEl = document.getElementById('soft-cursor');
+        let cursorIdleTimer = null;
+        const CURSOR_IDLE_MS = 3000;
+
+        function showSoftCursor() {
+            if (!softCursorEl) return;
+            softCursorEl.classList.add('visible');
+        }
+
+        function hideSoftCursor() {
+            if (!softCursorEl) return;
+            softCursorEl.classList.remove('visible');
+        }
+
+        function resetCursorIdleTimer() {
+            showSoftCursor();
+            if (cursorIdleTimer) window.clearTimeout(cursorIdleTimer);
+            cursorIdleTimer = window.setTimeout(() => hideSoftCursor(), CURSOR_IDLE_MS);
+        }
+
+        function moveSoftCursor(clientX, clientY) {
+            if (!softCursorEl) return;
+            softCursorEl.style.transform = `translate(${clientX}px, ${clientY}px)`;
+        }
+
+        // Track pointer on the canvas container to avoid extra work elsewhere
+        if (canvasContainerEl) {
+            canvasContainerEl.addEventListener('pointermove', (e) => {
+                moveSoftCursor(e.clientX, e.clientY);
+                resetCursorIdleTimer();
+            }, { passive: true });
+
+            canvasContainerEl.addEventListener('pointerdown', (e) => {
+                moveSoftCursor(e.clientX, e.clientY);
+                resetCursorIdleTimer();
+            }, { passive: true });
+
+            canvasContainerEl.addEventListener('pointerenter', (e) => {
+                moveSoftCursor(e.clientX, e.clientY);
+                resetCursorIdleTimer();
+            }, { passive: true });
+
+            canvasContainerEl.addEventListener('pointerleave', () => {
+                hideSoftCursor();
+                if (cursorIdleTimer) window.clearTimeout(cursorIdleTimer);
+                cursorIdleTimer = null;
+            }, { passive: true });
+        }
+
+        // Start hidden; it will appear on first movement
+        hideSoftCursor();
+
+function setCanvasVisible(visible, durationMs = 450) {
             if (!canvasContainerEl) return;
             canvasContainerEl.style.transitionDuration = Math.max(0, durationMs) + 'ms';
             if (visible) {
@@ -1310,7 +1411,7 @@ if (helpPointsEl) helpPointsEl.textContent = '';
         let anchorMesh = null;
         {
             // 3D "+" anchor using thin boxes, so line thickness is controllable.
-            const len = CONFIG.anchorLineLength || 0.40;
+            const len = CONFIG.anchorLineLength || 0.20;
             const th  = CONFIG.anchorLineThickness || 0.002;
 
             const mat = new THREE.MeshBasicMaterial({
@@ -1727,7 +1828,7 @@ if (helpPointsEl) helpPointsEl.textContent = '';
                     console.log('✅ Loading from cache');
                     arrayBuffer = cachedData;
                     const totalStr = formatBytes(cachedData.byteLength || 0);
-                    if (loadingTransferLine) loadingTransferLine.textContent = `LOADING FROM CACHE ${totalStr}`;
+                    if (loadingTransferLine) loadingTransferLine.textContent = `LOADING FROM CACHE`;
                     if (loadingProgressLine) loadingProgressLine.textContent = `LOADING 100%   ${totalStr} / ${totalStr}`;
                     if (loadingStageLine) loadingStageLine.textContent = 'PARSING';
 
