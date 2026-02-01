@@ -192,7 +192,40 @@
             opacity: 0.55;
             line-height: 1.6;
         }
-        #loading-credit-handle {
+        
+        /* Credits: make prefix smaller, keep left aligned across devices */
+        #loading-credits { text-align: left; width: 100%; }
+        #loading-credit-text .credits-prefix {
+            font-size: clamp(7px, 0.55em, 10px);
+            opacity: 0.55;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        #loading-credit-text .credits-name {
+            font-size: 7px;
+            opacity: 0.55;
+            letter-spacing: 1px;
+        }
+
+        /* Credits unified: two lines, same font */
+        #loading-credit-text .credits-prefix,
+        #loading-credit-text .credits-name {
+            font-size: 10px;
+            opacity: 0.6;
+            letter-spacing: 1px;
+            text-transform: none;
+            line-height: 1.35;
+        }
+        #loading-credit-text .credits-line {
+            font-size: 10px;
+            opacity: 0.6;
+            letter-spacing: 1px;
+            line-height: 1.35;
+            display: block;
+        }
+        /* Hide legacy clickable handle so typography stays consistent */
+        #loading-credit-handle { display: none !important; }
+#loading-credit-handle {
             color: #fff;
             text-decoration: none;
             opacity: 0.9;
@@ -257,22 +290,22 @@
             font-weight: 300;
         }
         
-        #loading-credits {
+        #loading-credits-legacy {
             font-size: 14px;
             opacity: 0.6;
             line-height: 1.8;
             font-weight: 300;
             text-align: center;
         }
-        
-        #loading-credits a {
+
+        #loading-credits-legacy a {
             color: #fff;
             text-decoration: none;
             opacity: 0.6;
             transition: opacity 0.3s;
         }
         
-        #loading-credits a:hover {
+        #loading-credits-legacy a:hover {
             opacity: 1.0;
             animation: pulse 1.5s ease-in-out infinite;
         }
@@ -674,7 +707,7 @@
                 <div id="help-version" class="help-version"></div>
 
                 <div id="help-debug-wrap">
-                    <button id="help-debug-toggle" type="button">debug: off</button>
+                    <button id="help-debug-toggle" type="button">STATS: off</button>
                     <div id="help-debug" class="collapsed">
                         <div id="help-points"></div>
                         <div id="help-device"></div>
@@ -726,13 +759,13 @@
             // Audio Reactive (Web Audio API)
             audioReactive: {
                 enabled: false,
-                sensitivity: 4.0,
-                smoothing: 0.05,
+                sensitivity: 9.0,
+                smoothing: 0.02,
                 fftSize: 2048,
                 pointSizeBoost: 6.6,
-                bands: 8,
+                bands: 3,
                 bandPointBoost: 0.8,
-                noiseBoost: 0.7
+                noiseBoost: 0.2
             },
 
             // Lite Mode (fast, guaranteed)
@@ -760,26 +793,26 @@
                     name: 'stage 1 - clean',
                     rotationSpeed: { x: 0, y: 1.0, z: 0 },   // deg/sec
                     twist: { enabled: false, amount: 0, axis: 'x' },
-                    noise: { enabled: false, amp: 0.05, scale: 0.49, speed: 0.0005, seed: [0, 0, 0], randomizeSeedOnEnter: false }
+                    noise: { enabled: false, amp: 0.05, scale: 0.05, speed: 0.0005, seed: [0, 0, 0], randomizeSeedOnEnter: false }
                 },
                 2: {
                     name: 'stage 2 - twist',
                     rotationSpeed: { x: 0, y: 1.0, z: 0 },
-                    twist: { enabled: true, amount: 0.5, axis: 'x', spinDegPerSec: 0.2 },
-                    noise: { enabled: false, amp: 0.05, scale: 0.05, speed: 0.0005, seed: [0, 0, 0], randomizeSeedOnEnter: false }
+                    twist: { enabled: true, amount: 0.5, axis: 'x', spinDegPerSec: 0.4 },
+                    noise: { enabled: false, amp: 0.08, scale: 0.05, speed: 0.0005, seed: [0, 0, 0], randomizeSeedOnEnter: false }
                 },
                 3: {
                     name: 'stage 3 - twist + waves',
                     rotationSpeed: { x: 0, y: 1.0, z: 0.0 },
                     twist: { enabled: false, amount: 0, axis: 'x', spinDegPerSec: 1 },
-                    noise: { enabled: true, amp: 0.05, scale: 0.05, speed: 0.0005, seed: [0, 0, 0], randomizeSeedOnEnter: true }
+                    noise: { enabled: true, amp: 0.06, scale: 0.05, speed: 0.0005, seed: [0, 0, 0], randomizeSeedOnEnter: true }
                 }
             },
 
 // Intro Animation - Radial Reveal
             introAnimation: {
                 enabled: true,
-                duration: 50000,
+                duration: 30000,
                 rotationDegrees: 0,
                 
                 // Center Point
@@ -851,8 +884,8 @@
             cloudRotation: { x: 0, y: 40, z: 0 },
             cloudRotationSpeed: { x: 0, y: 1, z: 0 },
             cloudScale: { x: 2.0, y: 2.0, z: 2.0 },
-            cameraPosition: [3.44, 2.29, 0.85],
-            cameraTarget: [0.33, -0.04, -0.12],
+            cameraPosition: [3.19, 2.10, 1.28],
+            cameraTarget: [0.24, -0.11, 0.36],
             cameraFOV: 45,
             cameraNear: 0.005,
             cameraFar: 1000,
@@ -917,7 +950,14 @@
             grid3DFadePower: 3.5,
             grid3DFadeRadiusMultX: 1.0,
             grid3DFadeRadiusMultY: 2.0,
-            grid3DFadeRadiusMultZ: 1.0,
+            grid3DFadeRadiusMultZ: 1.0,            
+
+            // Soft cursor fade-out: ms of inactivity before hiding (desktop + touch)
+            // Keep this relatively small on iPad so the pointer doesn't 'hang' on screen.
+
+            cursorIdleMs: 1650,
+
+
             
             backgroundColor: '#000000',
         };
@@ -935,7 +975,7 @@
         // ============================================
         const softCursorEl = document.getElementById('soft-cursor');
         let cursorIdleTimer = null;
-        const CURSOR_IDLE_MS = 3000;
+        const CURSOR_IDLE_MS = Math.max(0, Number(CONFIG.cursorIdleMs ?? 650) || 650);
 
         function showSoftCursor() {
             if (!softCursorEl) return;
@@ -1082,8 +1122,14 @@ function setCanvasVisible(visible, durationMs = 450) {
         const tag3 = (tag3Raw.length ? tag3Raw : ('#' + (CONFIG.loadingScreen.titleMeta || '').trim())).trim();
 
         if (tag1El) tag1El.textContent = tag1;
-        if (tag2El) tag2El.textContent = tag2;
-        if (tag3El) tag3El.textContent = tag3;
+        if (tag2El) {
+            // Force a line break between fragment label and timestamp
+            tag2El.innerHTML = `${tag2}<br>${tag3}`;
+        }
+        if (tag3El) {
+            tag3El.textContent = '';
+            tag3El.style.display = 'none';
+        }
 
         const scanTitleEl = document.getElementById('loading-scan-title');
         const scanCityEl = document.getElementById('loading-scan-city');
@@ -1107,7 +1153,16 @@ function setCanvasVisible(visible, durationMs = 450) {
         const credits = CONFIG.loadingScreen.credits || {};
         const creditsPrefix = (CONFIG.loadingScreen.creditsPrefix || 'scanned and developed by').trim();
 
-        if (creditTextEl) creditTextEl.textContent = `${creditsPrefix} ${credits.name || ''}`.trim();
+        if (creditTextEl) {
+            const name = (credits.name || '').trim();
+            const prefix = creditsPrefix;
+            const handle = (credits.handle || '').trim();
+            const line1 = `${prefix} ${name}`.trim();
+            const line2 = handle;
+            creditTextEl.innerHTML = `<span class="credits-line">${line1}</span>`
+                + (line2 ? `<span class="credits-line">${line2}</span>` : '');
+        }
+
         if (creditHandleEl) {
             const handleText = (credits.handle || '').trim();
             const handleHref = (credits.instagram || '').trim();
