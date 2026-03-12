@@ -1068,7 +1068,7 @@
                 // Scan 2 luminance sweep color
                 scan2Color: '#ffffff',
 
-                // Effect parameters (all tunable)
+                // Effect parameters 
                 effects: {
                     // Flicker point selection (0.0-1.0, higher = fewer points)
                     flicker1Threshold: 0.9,   // ~3% of points
@@ -1087,11 +1087,11 @@
                     scan1AxisEveryN: 4,
                     scan1TravelLength: 0.8,
                     scan1PauseMs: 1500,
-                    scan1FrontSharp: 0.02,     // sharp front edge width
+                    scan1FrontSharp: 0.01,     // sharp front edge width
                     scan1TailSoft: 0.15,       // soft tail gradient length
                     scan1Strength: 0.8,        // color mix strength (0-1)
                     scan1Displacement: 0.015,   // point displacement amount
-                    scan1MinLevel: 0.2,        // below this = invisible (audio threshold)
+                    scan1MinLevel: 0.3,        // below this = invisible (audio threshold)
                     scan1ColorX: [0.3, 1.0, 0.5],
                     scan1ColorY: [1.0, 0.3, 1.0],
                     scan1ColorZ: [0.3, 1.0, 1.0],
@@ -1165,13 +1165,13 @@
                 },
                 2: {
                     name: 'stage 2 - twist',
-                    rotationSpeed: { x: 0, y: 1.0, z: 0 },
+                    rotationSpeed: { x: 5, y: 0.0, z: 0 },
                     twist: { enabled: true, amount: 0.5, axis: 'x', spinDegPerSec: 0.4 },
                     noise: { enabled: false, amp: 0.1, scale: 0.05, speed: 0.001, seed: [0, 0, 0], randomizeSeedOnEnter: false }
                 },
                 3: {
                     name: 'stage 3 - twist + waves',
-                    rotationSpeed: { x: 1, y: 0.0, z: 0.0 },
+                    rotationSpeed: { x: 0, y: 1.0, z: 0.0 },
                     twist: { enabled: false, amount: 0, axis: 'x', spinDegPerSec: 1 },
                     noise: { enabled: true, amp: 0.1, scale: 0.05, speed: 0.001, seed: [0, 0, 0], randomizeSeedOnEnter: true }
                 }
