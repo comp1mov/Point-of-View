@@ -1159,7 +1159,7 @@
             stages: {
                 1: {
                     name: 'stage 1 - clean',
-                    rotationSpeed: { x: 0, y: 1.0, z: 0 },   // deg/sec
+                    rotationSpeed: { x: 1, y: 0.0, z: 0 },   // deg/sec
                     twist: { enabled: false, amount: 0, axis: 'x' },
                     noise: { enabled: false, amp: 0.1, scale: 0.05, speed: 0.001, seed: [0, 0, 0], randomizeSeedOnEnter: false }
                 },
@@ -1171,7 +1171,7 @@
                 },
                 3: {
                     name: 'stage 3 - twist + waves',
-                    rotationSpeed: { x: 0, y: 1.0, z: 0.0 },
+                    rotationSpeed: { x: 0, y: 0.0, z: 1.0 },
                     twist: { enabled: false, amount: 0, axis: 'x', spinDegPerSec: 1 },
                     noise: { enabled: true, amp: 0.1, scale: 0.05, speed: 0.001, seed: [0, 0, 0], randomizeSeedOnEnter: true }
                 }
