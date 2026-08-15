@@ -2957,7 +2957,11 @@ if (window.anchorMesh) {
         if (CAMSYS.enabled) {
             renderer.domElement.addEventListener('pointerdown', camMarkUserActive, { passive: true });
             renderer.domElement.addEventListener('pointermove', (e) => { if (e.buttons > 0) camMarkUserActive(); }, { passive: true });
-            renderer.domElement.addEventListener('wheel', camMarkUserActive, { passive: true });
+            function camMarkWheelActive() {
+                camMarkUserActive();
+                controls.enabled = true;
+            }
+            renderer.domElement.addEventListener('wheel', camMarkWheelActive, { passive: true, capture: true });
             renderer.domElement.addEventListener('touchstart', camMarkUserActive, { passive: true });
             renderer.domElement.addEventListener('touchmove', camMarkUserActive, { passive: true });
 
