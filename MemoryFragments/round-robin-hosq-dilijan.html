@@ -1041,6 +1041,7 @@
         // ============================================
         const FRAGMENT = {
                   "title": "Round Robin, HOSQ",
+                  "microVersion": "v052.3-wheel-clamp",
                   "place": "Villa3, Dilijan, Armenia",
                   "dateLabel": "2026-07-21 16:04",
                   "dateMetaSuffix": "",
@@ -1312,7 +1313,9 @@
             orbitMinDistance: 0.1,
             enableCameraPushAtMinZoom: true,
             cameraPushSpeed: 0.00005,
+            cameraPushMaxStep: 0.008,
             cameraPushSpeedTouch: 0.00025,
+            mouseWheelZoomSpeed: 0.35,
 
             // Camera System (presets + idle auto scenes)
             cameraSystem: {
@@ -1782,7 +1785,7 @@ if (helpCreditsEl) {
             helpCreditsEl.innerHTML = pieces.join(' ');
         }
         if (helpVersionEl) {
-            helpVersionEl.textContent = 'based on v052';
+            helpVersionEl.textContent = ['based on v052', FRAGMENT.microVersion].filter(Boolean).join(' / ');
         }
 
 if (helpPointsEl) helpPointsEl.textContent = '';
@@ -2651,6 +2654,7 @@ const StrudelController = (() => {
         controls.target.set(...CONFIG.cameraTarget);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
+        controls.zoomSpeed = CONFIG.mouseWheelZoomSpeed || 1.0;
 
         // User activity tracking for anchor fade
         const userActivity = { lastTime: 0, active: false, anchorOpacity: 0 };
@@ -2690,7 +2694,7 @@ const StrudelController = (() => {
             event.stopPropagation();
 
             _pushDir.subVectors(controls.target, camera.position).normalize();
-            const push = (-event.deltaY) * CONFIG.cameraPushSpeed;
+            const push = Math.min((-event.deltaY) * CONFIG.cameraPushSpeed, CONFIG.cameraPushMaxStep || 0.008);
             camera.position.addScaledVector(_pushDir, push);
             controls.target.addScaledVector(_pushDir, push);
 
