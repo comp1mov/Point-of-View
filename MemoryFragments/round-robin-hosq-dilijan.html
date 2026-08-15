@@ -1346,7 +1346,7 @@
                     { name: 'close', weight: 1.0, cameraPosition: [1.5, 0.3, 1.0],    cameraTarget: [-0.2, -0.1, 0.0],   cameraFOV: 70 },
                     { name: 'side',  weight: 0.8, cameraPosition: [-3.0, 1.0, 2.0],  cameraTarget: [-0.1, 0.5, 0.2],     cameraFOV: 45 }
                 ],
-                presetTransitionMs: 9000,
+                presetTransitionMs: 1600,
                 transitionMs: 19000,
                 idleBeforeAutoMs: 30000,
                 autoMinIntervalMs: 25000,
@@ -2631,7 +2631,7 @@ const StrudelController = (() => {
     
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
         document.getElementById('canvas-container').appendChild(renderer.domElement);
         // Device info (for help/debug)
         {
@@ -2961,14 +2961,24 @@ if (window.anchorMesh) {
             renderer.domElement.addEventListener('touchstart', camMarkUserActive, { passive: true });
             renderer.domElement.addEventListener('touchmove', camMarkUserActive, { passive: true });
 
-            // Preset keys 1-4
+            function getPresetKeyFromEvent(e) {
+                if (e.code && e.code.startsWith('Digit')) return e.code.slice(5);
+                if (e.code && e.code.startsWith('Numpad')) return e.code.slice(6);
+                return String(e.key || '');
+            }
+
+            // Preset keys 1-4, including numpad keys.
             window.addEventListener('keydown', (e) => {
                 if (!CAMSYS_CFG.presetKeysEnabled) return;
                 if (e.shiftKey || e.altKey || e.metaKey || e.ctrlKey) return;
-                const key = e.key;
+                const t = e.target;
+                const isTyping = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+                if (isTyping) return;
+                const key = getPresetKeyFromEvent(e);
                 if (key !== '1' && key !== '2' && key !== '3' && key !== '4') return;
                 const preset = CAMSYS_CFG.presets && CAMSYS_CFG.presets[key];
                 if (!preset) return;
+                e.preventDefault();
                 camMarkUserActive();
                 _startTransition(_poseFromConfig(preset), CAMSYS_CFG.presetTransitionMs || 3000);
             });
