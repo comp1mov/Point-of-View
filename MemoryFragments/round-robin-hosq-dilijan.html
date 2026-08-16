@@ -896,6 +896,96 @@
             margin-top: 10px;
         }
 
+        #touch-nav {
+            position: fixed;
+            left: 14px;
+            right: 14px;
+            bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+            z-index: 32;
+            display: none;
+            justify-content: space-between;
+            align-items: flex-end;
+            pointer-events: none;
+        }
+
+        .touch-pad {
+            pointer-events: auto;
+            opacity: 0.72;
+            transition: opacity 180ms ease, transform 180ms ease;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .touch-pad:active,
+        .touch-pad.is-active {
+            opacity: 0.92;
+        }
+
+        .touch-dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 42px);
+            grid-template-rows: repeat(3, 42px);
+            gap: 5px;
+        }
+
+        .touch-zoom {
+            display: grid;
+            grid-template-columns: 42px;
+            gap: 7px;
+        }
+
+        .touch-nav-spacer {
+            width: 42px;
+            height: 42px;
+        }
+
+        .touch-nav-btn {
+            width: 42px;
+            height: 42px;
+            border: 1px solid rgba(255,255,255,0.22);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.34);
+            color: rgba(255,255,255,0.86);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+            font-size: 20px;
+            line-height: 1;
+            cursor: pointer;
+            touch-action: none;
+        }
+
+        .touch-nav-btn:active,
+        .touch-nav-btn.is-held {
+            background: rgba(255,255,255,0.16);
+            border-color: rgba(255,255,255,0.42);
+            transform: translateY(1px);
+        }
+
+        @media (hover: none), (pointer: coarse) {
+            #touch-nav {
+                display: flex;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .touch-dpad {
+                grid-template-columns: repeat(3, 38px);
+                grid-template-rows: repeat(3, 38px);
+                gap: 4px;
+            }
+            .touch-zoom {
+                grid-template-columns: 38px;
+                gap: 6px;
+            }
+            .touch-nav-btn,
+            .touch-nav-spacer {
+                width: 38px;
+                height: 38px;
+            }
+        }
+
 /* Mobile adjustments (iOS Safari centers 100vh lower than visible area) */
         @media (max-width: 600px) {
             #loading-overlay {
@@ -918,6 +1008,24 @@
         <button id="corner-strudel" type="button" aria-label="Strudel window">@</button>
         <button id="corner-audio-reactive" type="button" aria-label="Audio Reactive toggle">∿</button>
         <button id="corner-help" type="button" aria-label="Help">?</button>
+    </div>
+
+    <div id="touch-nav" aria-label="Touch camera navigation">
+        <div class="touch-pad touch-dpad">
+            <div class="touch-nav-spacer"></div>
+            <button class="touch-nav-btn" type="button" data-touch-nav="forward" aria-label="Move forward">↑</button>
+            <div class="touch-nav-spacer"></div>
+            <button class="touch-nav-btn" type="button" data-touch-nav="left" aria-label="Move left">←</button>
+            <div class="touch-nav-spacer"></div>
+            <button class="touch-nav-btn" type="button" data-touch-nav="right" aria-label="Move right">→</button>
+            <div class="touch-nav-spacer"></div>
+            <button class="touch-nav-btn" type="button" data-touch-nav="back" aria-label="Move back">↓</button>
+            <div class="touch-nav-spacer"></div>
+        </div>
+        <div class="touch-pad touch-zoom">
+            <button class="touch-nav-btn" type="button" data-touch-nav="zoomIn" aria-label="Zoom in">+</button>
+            <button class="touch-nav-btn" type="button" data-touch-nav="zoomOut" aria-label="Zoom out">−</button>
+        </div>
     </div>
     
     <!-- Loading Overlay -->
@@ -983,6 +1091,7 @@
                             <b>rotate</b> — 1 finger / left click + drag<br>
                             <b>pan</b> — 2 fingers / right click + drag<br>
                             <b>zoom</b> — pinch / scroll wheel<br>
+                            <b>fly</b> — hold touch arrows / + −<br>
                             <b>cameras</b> — keys 1 2 3 4<br>
                             <b>stages</b> — keys Q W E (0 = auto)
                         </div>
@@ -1041,6 +1150,7 @@
         // ============================================
         const FRAGMENT = {
                   "title": "Round Robin, HOSQ",
+                  "microVersion": "v052.5-smooth-nav",
                   "place": "Villa3, Dilijan, Armenia",
                   "dateLabel": "2026-07-21 16:04",
                   "dateMetaSuffix": "",
@@ -1313,6 +1423,18 @@
             enableCameraPushAtMinZoom: true,
             cameraPushSpeed: 0.00005,
             cameraPushSpeedTouch: 0.00025,
+            smoothWheelZoom: {
+                enabled: true,
+                zoomScale: 0.00115,
+                response: 0.18,
+                maxWheelDelta: 140,
+                maxPushQueue: 0.12
+            },
+            touchNavigator: {
+                enabled: true,
+                moveSpeed: 0.72,
+                zoomSpeed: 0.9
+            },
 
             // Camera System (presets + idle auto scenes)
             cameraSystem: {
@@ -1782,7 +1904,7 @@ if (helpCreditsEl) {
             helpCreditsEl.innerHTML = pieces.join(' ');
         }
         if (helpVersionEl) {
-            helpVersionEl.textContent = 'based on v052';
+            helpVersionEl.textContent = ['based on v052', FRAGMENT.microVersion].filter(Boolean).join(' / ');
         }
 
 if (helpPointsEl) helpPointsEl.textContent = '';
@@ -2671,35 +2793,103 @@ const StrudelController = (() => {
         // Prevent OrbitControls from collapsing to radius 0 (gets "stuck"/singular)
         controls.minDistance = Math.max(1e-6, CONFIG.orbitMinDistance);
 
-        // If user tries to zoom-in past minDistance, move camera and target together
-        // so it feels like flying forward instead of hitting a wall.
+        // Smooth wheel zoom: wheel input sets intent, the animation loop eases into it.
         const _pushDir = new THREE.Vector3();
-        renderer.domElement.addEventListener('wheel', (event) => {
-            if (!CONFIG.enableCameraPushAtMinZoom) return;
-            if (!controls.enabled || !controls.enableZoom) return;
+        const _smoothWheelDir = new THREE.Vector3();
+        const smoothWheelState = {
+            targetDistance: camera.position.distanceTo(controls.target),
+            pushQueue: 0
+        };
 
-            const zoomIn = event.deltaY < 0;
-            if (!zoomIn) return;
+        function syncSmoothWheelDistance() {
+            smoothWheelState.targetDistance = camera.position.distanceTo(controls.target);
+        }
 
-            const dist = camera.position.distanceTo(controls.target);
-            const minD = controls.minDistance || CONFIG.orbitMinDistance;
-            if (dist > minD + 1e-4) return;
-
-            // Intercept OrbitControls wheel dolly
-            event.preventDefault();
-            event.stopPropagation();
-
-            _pushDir.subVectors(controls.target, camera.position).normalize();
-            const push = (-event.deltaY) * CONFIG.cameraPushSpeed;
-            camera.position.addScaledVector(_pushDir, push);
-            controls.target.addScaledVector(_pushDir, push);
-
+        function updateAnchorToTarget() {
             if (window.anchorMesh) {
                 window.anchorMesh.position.copy(controls.target);
             }
+        }
 
-            controls.update();
+        function pushCameraAndTarget(distance) {
+            if (!distance) return;
+            _pushDir.subVectors(controls.target, camera.position);
+            if (_pushDir.lengthSq() < 1e-12) return;
+            _pushDir.normalize();
+            camera.position.addScaledVector(_pushDir, distance);
+            controls.target.addScaledVector(_pushDir, distance);
+            updateAnchorToTarget();
+        }
+
+        renderer.domElement.addEventListener('wheel', (event) => {
+            const smoothCfg = CONFIG.smoothWheelZoom || {};
+            if (!smoothCfg.enabled) return;
+            if (!controls.enableZoom) return;
+
+            markUserInteraction();
+            if (CAMSYS.enabled) {
+                camMarkUserActive();
+                controls.enabled = true;
+            }
+            if (!controls.enabled) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const dist = camera.position.distanceTo(controls.target);
+            const minD = controls.minDistance || CONFIG.orbitMinDistance;
+            const maxD = Number.isFinite(controls.maxDistance)
+                ? controls.maxDistance
+                : Math.max(minD + 1, Math.min(CONFIG.cameraFar * 0.6, 600));
+
+            if (!Number.isFinite(smoothWheelState.targetDistance) ||
+                Math.abs(smoothWheelState.targetDistance - dist) > Math.max(2, dist * 0.75)) {
+                smoothWheelState.targetDistance = dist;
+            }
+
+            let delta = event.deltaY;
+            if (event.deltaMode === 1) delta *= 16;
+            if (event.deltaMode === 2) delta *= window.innerHeight || 800;
+            delta = THREE.MathUtils.clamp(delta, -(smoothCfg.maxWheelDelta || 140), smoothCfg.maxWheelDelta || 140);
+
+            const nextDistance = smoothWheelState.targetDistance * Math.exp(delta * (smoothCfg.zoomScale || 0.00115));
+            if (nextDistance < minD) {
+                smoothWheelState.targetDistance = minD;
+                if (CONFIG.enableCameraPushAtMinZoom && delta < 0) {
+                    const push = (-delta) * (CONFIG.cameraPushSpeed || 0.00005);
+                    smoothWheelState.pushQueue = Math.min(
+                        smoothWheelState.pushQueue + push,
+                        smoothCfg.maxPushQueue || 0.12
+                    );
+                }
+            } else {
+                smoothWheelState.targetDistance = THREE.MathUtils.clamp(nextDistance, minD, maxD);
+            }
         }, { passive: false, capture: true });
+
+        function applySmoothWheelZoom(deltaTime) {
+            const smoothCfg = CONFIG.smoothWheelZoom || {};
+            if (!smoothCfg.enabled) return;
+
+            const frameScale = Math.min(deltaTime * 60, 3);
+            const alpha = 1 - Math.pow(1 - (smoothCfg.response || 0.18), frameScale);
+
+            const dist = camera.position.distanceTo(controls.target);
+            if (Number.isFinite(smoothWheelState.targetDistance) && Math.abs(smoothWheelState.targetDistance - dist) > 1e-5) {
+                _smoothWheelDir.subVectors(camera.position, controls.target);
+                if (_smoothWheelDir.lengthSq() > 1e-12) {
+                    _smoothWheelDir.normalize();
+                    const nextDist = THREE.MathUtils.lerp(dist, smoothWheelState.targetDistance, alpha);
+                    camera.position.copy(controls.target).addScaledVector(_smoothWheelDir, nextDist);
+                }
+            }
+
+            if (smoothWheelState.pushQueue > 1e-6) {
+                const pushStep = smoothWheelState.pushQueue * alpha;
+                pushCameraAndTarget(pushStep);
+                smoothWheelState.pushQueue = Math.max(0, smoothWheelState.pushQueue - pushStep);
+            }
+        }
 
 
         // Touch pinch: same "push-through" behavior at min zoom (iOS/Android)
@@ -2751,11 +2941,121 @@ const StrudelController = (() => {
 if (window.anchorMesh) {
                 window.anchorMesh.position.copy(controls.target);
             }
+            syncSmoothWheelDistance();
             controls.update();
         }, { passive: false, capture: true });
 
         renderer.domElement.addEventListener('touchend', () => { _isPinching = false; }, { passive: true });
         renderer.domElement.addEventListener('touchcancel', () => { _isPinching = false; }, { passive: true });
+
+        const touchNavEl = document.getElementById('touch-nav');
+        const touchNavState = {
+            forward: 0,
+            back: 0,
+            left: 0,
+            right: 0,
+            zoomIn: 0,
+            zoomOut: 0
+        };
+        const _navForward = new THREE.Vector3();
+        const _navRight = new THREE.Vector3();
+        const _navMove = new THREE.Vector3();
+        const _navZoomDir = new THREE.Vector3();
+
+        function setTouchNav(name, value) {
+            if (Object.prototype.hasOwnProperty.call(touchNavState, name)) {
+                touchNavState[name] = value;
+            }
+        }
+
+        function clearTouchNav() {
+            Object.keys(touchNavState).forEach((key) => { touchNavState[key] = 0; });
+            if (touchNavEl) {
+                touchNavEl.querySelectorAll('.is-held').forEach((btn) => btn.classList.remove('is-held'));
+            }
+        }
+
+        if (touchNavEl && !(CONFIG.touchNavigator && CONFIG.touchNavigator.enabled)) {
+            touchNavEl.style.display = 'none';
+        }
+
+        if (touchNavEl && CONFIG.touchNavigator && CONFIG.touchNavigator.enabled) {
+            touchNavEl.querySelectorAll('[data-touch-nav]').forEach((btn) => {
+                const name = btn.getAttribute('data-touch-nav');
+                btn.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    btn.setPointerCapture && btn.setPointerCapture(e.pointerId);
+                    btn.classList.add('is-held');
+                    setTouchNav(name, 1);
+                    markUserInteraction();
+                    if (CAMSYS.enabled) {
+                        camMarkUserActive();
+                        controls.enabled = true;
+                    }
+                });
+                const release = (e) => {
+                    e.preventDefault();
+                    btn.classList.remove('is-held');
+                    setTouchNav(name, 0);
+                };
+                btn.addEventListener('pointerup', release);
+                btn.addEventListener('pointercancel', release);
+                btn.addEventListener('lostpointercapture', () => {
+                    btn.classList.remove('is-held');
+                    setTouchNav(name, 0);
+                });
+            });
+            window.addEventListener('blur', clearTouchNav);
+        }
+
+        function applyTouchNavigator(deltaTime) {
+            if (!CONFIG.touchNavigator || !CONFIG.touchNavigator.enabled) return;
+
+            const strafe = touchNavState.right - touchNavState.left;
+            const fly = touchNavState.forward - touchNavState.back;
+            const zoom = touchNavState.zoomIn - touchNavState.zoomOut;
+            if (!strafe && !fly && !zoom) return;
+
+            markUserInteraction();
+            if (CAMSYS.enabled) {
+                camMarkUserActive();
+                controls.enabled = true;
+            }
+
+            camera.getWorldDirection(_navForward).normalize();
+            _navRight.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
+
+            _navMove.set(0, 0, 0);
+            if (fly) _navMove.addScaledVector(_navForward, fly);
+            if (strafe) _navMove.addScaledVector(_navRight, strafe);
+            if (_navMove.lengthSq() > 1e-8) {
+                _navMove.normalize().multiplyScalar((CONFIG.touchNavigator.moveSpeed || 0.72) * deltaTime);
+                camera.position.add(_navMove);
+                controls.target.add(_navMove);
+                updateAnchorToTarget();
+            }
+
+            if (zoom) {
+                const dist = camera.position.distanceTo(controls.target);
+                const minD = controls.minDistance || CONFIG.orbitMinDistance;
+                _navZoomDir.subVectors(camera.position, controls.target);
+                if (_navZoomDir.lengthSq() > 1e-12) {
+                    _navZoomDir.normalize();
+                    const zoomStep = Math.max(0.12, dist) * (CONFIG.touchNavigator.zoomSpeed || 0.9) * deltaTime;
+                    if (zoom > 0) {
+                        if (dist > minD + zoomStep) {
+                            camera.position.addScaledVector(_navZoomDir, -zoomStep);
+                        } else if (CONFIG.enableCameraPushAtMinZoom) {
+                            camera.position.copy(controls.target).addScaledVector(_navZoomDir, minD);
+                            pushCameraAndTarget(zoomStep);
+                        }
+                    } else {
+                        camera.position.addScaledVector(_navZoomDir, zoomStep);
+                    }
+                    syncSmoothWheelDistance();
+                }
+            }
+        }
 
 
 
@@ -4833,6 +5133,9 @@ if (!enabled) {
                     window.pointCloudMesh.rotation.z += runtimeRotationSpeed.z * deltaTime * Math.PI / 180;
                 }
             }
+
+            applySmoothWheelZoom(deltaTime);
+            applyTouchNavigator(deltaTime);
             
             if (window.anchorMesh) {
                 const now = performance.now();
