@@ -1041,7 +1041,7 @@
         // ============================================
         const FRAGMENT = {
                   "title": "Round Robin, HOSQ",
-                  "microVersion": "v052.3-wheel-clamp",
+                  "microVersion": "v052.4-wheel-native",
                   "place": "Villa3, Dilijan, Armenia",
                   "dateLabel": "2026-07-21 16:04",
                   "dateMetaSuffix": "",
@@ -1312,6 +1312,7 @@
             // OrbitControls safety + "push-through" at min zoom
             orbitMinDistance: 0.1,
             enableCameraPushAtMinZoom: true,
+            enableCameraPushAtMinZoomWheel: false,
             cameraPushSpeed: 0.00005,
             cameraPushMaxStep: 0.008,
             cameraPushSpeedTouch: 0.00025,
@@ -2680,6 +2681,7 @@ const StrudelController = (() => {
         const _pushDir = new THREE.Vector3();
         renderer.domElement.addEventListener('wheel', (event) => {
             if (!CONFIG.enableCameraPushAtMinZoom) return;
+            if (CONFIG.enableCameraPushAtMinZoomWheel === false) return;
             if (!controls.enabled || !controls.enableZoom) return;
 
             const zoomIn = event.deltaY < 0;
