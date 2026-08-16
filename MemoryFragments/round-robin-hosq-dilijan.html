@@ -1091,7 +1091,7 @@
                             <b>rotate</b> — 1 finger / left click + drag<br>
                             <b>pan</b> — 2 fingers / right click + drag<br>
                             <b>zoom</b> — pinch / scroll wheel<br>
-                            <b>fly</b> — hold touch arrows / + −<br>
+                            <b>fly</b> — hold arrow keys / touch arrows / + −<br>
                             <b>cameras</b> — keys 1 2 3 4<br>
                             <b>stages</b> — keys Q W E (0 = auto)
                         </div>
@@ -1150,7 +1150,7 @@
         // ============================================
         const FRAGMENT = {
                   "title": "Round Robin, HOSQ",
-                  "microVersion": "v052.5-smooth-nav",
+                  "microVersion": "v052.6-arrow-fly",
                   "place": "Villa3, Dilijan, Armenia",
                   "dateLabel": "2026-07-21 16:04",
                   "dateMetaSuffix": "",
@@ -3006,6 +3006,43 @@ if (window.anchorMesh) {
                 });
             });
             window.addEventListener('blur', clearTouchNav);
+        }
+
+        function getKeyboardNavName(e) {
+            if (e.code === 'ArrowUp') return 'forward';
+            if (e.code === 'ArrowDown') return 'back';
+            if (e.code === 'ArrowLeft') return 'left';
+            if (e.code === 'ArrowRight') return 'right';
+            if (e.code === 'Equal' || e.code === 'NumpadAdd' || e.key === '+') return 'zoomIn';
+            if (e.code === 'Minus' || e.code === 'NumpadSubtract' || e.key === '-') return 'zoomOut';
+            return '';
+        }
+
+        function isTypingTarget(target) {
+            return target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+        }
+
+        if (CONFIG.touchNavigator && CONFIG.touchNavigator.enabled) {
+            window.addEventListener('keydown', (e) => {
+                if (e.shiftKey || e.altKey || e.metaKey || e.ctrlKey) return;
+                if (isTypingTarget(e.target)) return;
+                const name = getKeyboardNavName(e);
+                if (!name) return;
+                e.preventDefault();
+                setTouchNav(name, 1);
+                markUserInteraction();
+                if (CAMSYS.enabled) {
+                    camMarkUserActive();
+                    controls.enabled = true;
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                const name = getKeyboardNavName(e);
+                if (!name) return;
+                e.preventDefault();
+                setTouchNav(name, 0);
+            });
         }
 
         function applyTouchNavigator(deltaTime) {
