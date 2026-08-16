@@ -1041,7 +1041,6 @@
         // ============================================
         const FRAGMENT = {
                   "title": "Round Robin, HOSQ",
-                  "microVersion": "v052.4-wheel-native",
                   "place": "Villa3, Dilijan, Armenia",
                   "dateLabel": "2026-07-21 16:04",
                   "dateMetaSuffix": "",
@@ -1312,11 +1311,8 @@
             // OrbitControls safety + "push-through" at min zoom
             orbitMinDistance: 0.1,
             enableCameraPushAtMinZoom: true,
-            enableCameraPushAtMinZoomWheel: false,
             cameraPushSpeed: 0.00005,
-            cameraPushMaxStep: 0.008,
             cameraPushSpeedTouch: 0.00025,
-            mouseWheelZoomSpeed: 0.35,
 
             // Camera System (presets + idle auto scenes)
             cameraSystem: {
@@ -1786,7 +1782,7 @@ if (helpCreditsEl) {
             helpCreditsEl.innerHTML = pieces.join(' ');
         }
         if (helpVersionEl) {
-            helpVersionEl.textContent = ['based on v052', FRAGMENT.microVersion].filter(Boolean).join(' / ');
+            helpVersionEl.textContent = 'based on v052';
         }
 
 if (helpPointsEl) helpPointsEl.textContent = '';
@@ -2655,7 +2651,6 @@ const StrudelController = (() => {
         controls.target.set(...CONFIG.cameraTarget);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
-        controls.zoomSpeed = CONFIG.mouseWheelZoomSpeed || 1.0;
 
         // User activity tracking for anchor fade
         const userActivity = { lastTime: 0, active: false, anchorOpacity: 0 };
@@ -2681,7 +2676,6 @@ const StrudelController = (() => {
         const _pushDir = new THREE.Vector3();
         renderer.domElement.addEventListener('wheel', (event) => {
             if (!CONFIG.enableCameraPushAtMinZoom) return;
-            if (CONFIG.enableCameraPushAtMinZoomWheel === false) return;
             if (!controls.enabled || !controls.enableZoom) return;
 
             const zoomIn = event.deltaY < 0;
@@ -2696,7 +2690,7 @@ const StrudelController = (() => {
             event.stopPropagation();
 
             _pushDir.subVectors(controls.target, camera.position).normalize();
-            const push = Math.min((-event.deltaY) * CONFIG.cameraPushSpeed, CONFIG.cameraPushMaxStep || 0.008);
+            const push = (-event.deltaY) * CONFIG.cameraPushSpeed;
             camera.position.addScaledVector(_pushDir, push);
             controls.target.addScaledVector(_pushDir, push);
 
@@ -2963,11 +2957,7 @@ if (window.anchorMesh) {
         if (CAMSYS.enabled) {
             renderer.domElement.addEventListener('pointerdown', camMarkUserActive, { passive: true });
             renderer.domElement.addEventListener('pointermove', (e) => { if (e.buttons > 0) camMarkUserActive(); }, { passive: true });
-            function camMarkWheelActive() {
-                camMarkUserActive();
-                controls.enabled = true;
-            }
-            renderer.domElement.addEventListener('wheel', camMarkWheelActive, { passive: true, capture: true });
+            renderer.domElement.addEventListener('wheel', camMarkUserActive, { passive: true });
             renderer.domElement.addEventListener('touchstart', camMarkUserActive, { passive: true });
             renderer.domElement.addEventListener('touchmove', camMarkUserActive, { passive: true });
 
