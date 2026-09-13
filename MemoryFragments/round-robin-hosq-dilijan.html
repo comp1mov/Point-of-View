@@ -1091,7 +1091,7 @@
                             <b>rotate</b> — 1 finger / left click + drag<br>
                             <b>pan</b> — 2 fingers / right click + drag<br>
                             <b>zoom</b> — pinch / scroll wheel<br>
-                            <b>fly</b> — hold arrow keys / touch arrows / + −<br>
+                            <b>fly</b> — hold arrows to orbit/dolly, + − to zoom<br>
                             <b>cameras</b> — keys 1 2 3 4<br>
                             <b>stages</b> — keys Q W E (0 = auto)
                         </div>
@@ -1150,7 +1150,7 @@
         // ============================================
         const FRAGMENT = {
                   "title": "Round Robin, HOSQ",
-                  "microVersion": "v052.6-arrow-fly",
+                  "microVersion": "v052.7-anchor-safe-arrows",
                   "place": "Villa3, Dilijan, Armenia",
                   "dateLabel": "2026-07-21 16:04",
                   "dateMetaSuffix": "",
@@ -1432,8 +1432,8 @@
             },
             touchNavigator: {
                 enabled: true,
-                moveSpeed: 0.72,
-                zoomSpeed: 0.9
+                orbitSpeed: 1.05,
+                dollySpeed: 0.92
             },
 
             // Camera System (presets + idle auto scenes)
@@ -2957,10 +2957,8 @@ if (window.anchorMesh) {
             zoomIn: 0,
             zoomOut: 0
         };
-        const _navForward = new THREE.Vector3();
-        const _navRight = new THREE.Vector3();
-        const _navMove = new THREE.Vector3();
-        const _navZoomDir = new THREE.Vector3();
+        const _navOffset = new THREE.Vector3();
+        const _navAxisY = new THREE.Vector3(0, 1, 0);
 
         function setTouchNav(name, value) {
             if (Object.prototype.hasOwnProperty.call(touchNavState, name)) {
@@ -3024,10 +3022,11 @@ if (window.anchorMesh) {
 
         if (CONFIG.touchNavigator && CONFIG.touchNavigator.enabled) {
             window.addEventListener('keydown', (e) => {
-                if (e.shiftKey || e.altKey || e.metaKey || e.ctrlKey) return;
+                if (e.altKey || e.metaKey || e.ctrlKey) return;
                 if (isTypingTarget(e.target)) return;
                 const name = getKeyboardNavName(e);
                 if (!name) return;
+                if (e.shiftKey && name !== 'zoomIn') return;
                 e.preventDefault();
                 setTouchNav(name, 1);
                 markUserInteraction();
@@ -3059,39 +3058,31 @@ if (window.anchorMesh) {
                 controls.enabled = true;
             }
 
-            camera.getWorldDirection(_navForward).normalize();
-            _navRight.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
-
-            _navMove.set(0, 0, 0);
-            if (fly) _navMove.addScaledVector(_navForward, fly);
-            if (strafe) _navMove.addScaledVector(_navRight, strafe);
-            if (_navMove.lengthSq() > 1e-8) {
-                _navMove.normalize().multiplyScalar((CONFIG.touchNavigator.moveSpeed || 0.72) * deltaTime);
-                camera.position.add(_navMove);
-                controls.target.add(_navMove);
-                updateAnchorToTarget();
+            _navOffset.subVectors(camera.position, controls.target);
+            let dist = _navOffset.length();
+            if (dist < 1e-8) {
+                _navOffset.set(0, 0, 1);
+                dist = 1;
             }
 
-            if (zoom) {
-                const dist = camera.position.distanceTo(controls.target);
+            if (strafe) {
+                const angle = -strafe * (CONFIG.touchNavigator.orbitSpeed || 1.05) * deltaTime;
+                _navOffset.applyAxisAngle(_navAxisY, angle);
+            }
+
+            const dolly = fly + zoom;
+            if (dolly) {
                 const minD = controls.minDistance || CONFIG.orbitMinDistance;
-                _navZoomDir.subVectors(camera.position, controls.target);
-                if (_navZoomDir.lengthSq() > 1e-12) {
-                    _navZoomDir.normalize();
-                    const zoomStep = Math.max(0.12, dist) * (CONFIG.touchNavigator.zoomSpeed || 0.9) * deltaTime;
-                    if (zoom > 0) {
-                        if (dist > minD + zoomStep) {
-                            camera.position.addScaledVector(_navZoomDir, -zoomStep);
-                        } else if (CONFIG.enableCameraPushAtMinZoom) {
-                            camera.position.copy(controls.target).addScaledVector(_navZoomDir, minD);
-                            pushCameraAndTarget(zoomStep);
-                        }
-                    } else {
-                        camera.position.addScaledVector(_navZoomDir, zoomStep);
-                    }
-                    syncSmoothWheelDistance();
-                }
+                const maxD = Number.isFinite(controls.maxDistance)
+                    ? controls.maxDistance
+                    : Math.max(minD + 1, Math.min(CONFIG.cameraFar * 0.6, 600));
+                const scale = Math.exp(-dolly * (CONFIG.touchNavigator.dollySpeed || 0.92) * deltaTime);
+                const nextDist = THREE.MathUtils.clamp(_navOffset.length() * scale, minD, maxD);
+                _navOffset.setLength(nextDist);
             }
+
+            camera.position.copy(controls.target).add(_navOffset);
+            syncSmoothWheelDistance();
         }
 
 
